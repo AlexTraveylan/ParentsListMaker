@@ -47,6 +47,16 @@ class Repository[T]:
 
         return first_item
 
+    def get_or_none(self, session: Session, **kwargs) -> T | None:
+        filter_kwargs = [
+            getattr(self.__model__, key) == value for key, value in kwargs.items()
+        ]
+
+        statement = select(self.__model__).where(*filter_kwargs)
+        item = session.exec(statement).first()
+
+        return item
+
     def get_all(self, session: Session) -> list[T]:
         return session.exec(select(self.__model__)).all()
 

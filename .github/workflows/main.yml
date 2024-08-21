@@ -1,4 +1,4 @@
-name: <Modify it by your name>
+name: ParentsListMaker
 on:
   push:
     branches: [main]

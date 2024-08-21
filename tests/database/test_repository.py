@@ -93,6 +93,16 @@ def test_update(repositorytest: Repository[TestModel], session: Session):
     assert item.name == "test2"
 
 
+def test_get_or_none(repositorytest: Repository[TestModel], session: Session):
+    item = get_test_model_factory(session, name="test")
+
+    assert repositorytest.get_or_none(session, name="test") == item
+
+
+def test_get_or_none_not_found(repositorytest: Repository[TestModel], session: Session):
+    assert repositorytest.get_or_none(session, name="test") is None
+
+
 class TestModel2(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     other_field: str

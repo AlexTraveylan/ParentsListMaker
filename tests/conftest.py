@@ -1,4 +1,5 @@
 import pytest
+from cryptography.fernet import Fernet
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
@@ -16,3 +17,8 @@ def engine_fixture():
 def session_fixture(engine):
     with Session(engine) as session:
         yield session
+
+
+@pytest.fixture
+def key():
+    return Fernet.generate_key()
