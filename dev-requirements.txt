@@ -1,0 +1,5 @@
+pytest
+factory_boy
+ruff
+mypy
+-r requirements.txt
