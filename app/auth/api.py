@@ -9,7 +9,7 @@ from app.auth.token import (
     User,
     authenticate_user,
     create_access_token,
-    get_current_active_user,
+    get_current_user,
 )
 from app.database.unit_of_work import unit_api
 from app.exceptions import CannotCreateStillExistsException, UnauthorizedException
@@ -33,9 +33,7 @@ def login_for_access_token(
     return token
 
 
-@auth_router.post(
-    "/register", response_model=Token, status_code=status.HTTP_201_CREATED
-)
+@auth_router.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
@@ -55,6 +53,6 @@ def register_user(
 
 @auth_router.get("/users/me/")
 def read_users_me(
-    current_user: Annotated[User, Depends(get_current_active_user)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     return current_user

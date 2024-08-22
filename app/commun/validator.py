@@ -32,3 +32,15 @@ def validate_email(value: str) -> str:
         raise ValueError("Email is too long. Maximum length is 254 characters.")
 
     return value
+
+
+def validate_username(value: str) -> str:
+    value = value.strip()
+
+    if len(value) < 2:
+        raise ValueError("Username must be at least 2 characters long")
+
+    if len(value) > 64:
+        raise ValueError("Username is too long. Maximum length is 64 characters.")
+
+    return value

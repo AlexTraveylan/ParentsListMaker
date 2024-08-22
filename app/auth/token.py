@@ -1,5 +1,4 @@
-import datetime
-from datetime import timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 import jwt
@@ -53,7 +52,7 @@ def create_access_token(data: dict) -> Token:
     data.update({"exp": expire})
     encoded_jwt = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
 
-    Token(access_token=encoded_jwt, token_type="bearer")
+    return Token(access_token=encoded_jwt, token_type="bearer")
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
@@ -63,17 +62,17 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
             username: str | None = payload.get("sub")
 
             if username is None:
-                raise UnauthorizedException
+                raise UnauthorizedException("Username not found in token")
 
             token_data = TokenData(username=username)
 
         except InvalidTokenError:
-            raise UnauthorizedException
+            raise UnauthorizedException("Invalid token")
 
         user = USER_SERVICE.get_or_none(session, username=token_data.username)
 
         if user is None:
-            raise UnauthorizedException
+            raise UnauthorizedException("User not found")
 
         session.expunge(user)
 

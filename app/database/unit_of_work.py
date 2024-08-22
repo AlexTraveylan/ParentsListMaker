@@ -50,14 +50,14 @@ def unit_api(attempt_message: str):
         logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"{attempt_message} FAILED",
+            detail=f"{attempt_message} FAILED : {str(e)}",
         )
     except UnauthorizedException as e:
         session.rollback()
         logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"{attempt_message} FAILED",
+            detail=f"{attempt_message} FAILED : {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception as e:
