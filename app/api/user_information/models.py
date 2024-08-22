@@ -5,6 +5,7 @@ from pydantic import field_validator
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field
 
+from app.api.user_information.schema import UserInformationSchemaOut
 from app.commun.crypto import decrypt, encrypt
 from app.commun.validator import validate_email, validate_username
 from app.database.model_base import BaseSQLModel
@@ -23,7 +24,10 @@ class UserInformation(BaseSQLModel, table=True):
     )
 
     @cached_property
-    def email(self) -> str:
+    def email(self) -> str | None:
+        if self.encrypted_email is None:
+            return None
+
         return decrypt(self.encrypted_email)
 
     @cached_property
@@ -35,7 +39,10 @@ class UserInformation(BaseSQLModel, table=True):
         return decrypt(self.encrypted_first_name)
 
     @field_validator("encrypted_email")
-    def email_format(cls, value: str) -> str:
+    def email_format(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
         value = validate_email(value)
 
         return encrypt(value)
@@ -51,6 +58,13 @@ class UserInformation(BaseSQLModel, table=True):
         value = validate_username(value)
 
         return encrypt(value)
+
+    def to_decrypted(self) -> UserInformationSchemaOut:
+        return UserInformationSchemaOut(
+            name=self.name,
+            first_name=self.first_name,
+            is_email=False if self.encrypted_email is None else True,
+        )
 
 
 class UserInformationService(Repository[UserInformation]):

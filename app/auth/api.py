@@ -12,7 +12,11 @@ from app.auth.token import (
     get_current_user,
 )
 from app.database.unit_of_work import unit_api
-from app.exceptions import CannotCreateStillExistsException, UnauthorizedException
+from app.exceptions import (
+    CannotCreateStillExistsException,
+    RessourceNotFoundException,
+    UnauthorizedException,
+)
 
 auth_router = APIRouter(
     tags=["Authentication"],
@@ -56,3 +60,16 @@ def read_users_me(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     return current_user
+
+
+@auth_router.delete("/users/me/")
+def delete_users_me(
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> None:
+    with unit_api("Trying to delete user") as session:
+        is_deleted = USER_SERVICE.delete(session, current_user.id)
+
+        if is_deleted is False:
+            raise RessourceNotFoundException("Cannot delete user")
+
+    return None

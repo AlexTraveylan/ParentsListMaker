@@ -8,6 +8,7 @@ from sqlmodel import Session, SQLModel
 from app.exceptions import (
     CannotCreateStillExistsException,
     ParentsListMakerException,
+    RessourceNotFoundException,
     UnauthorizedException,
 )
 from app.settings import DB_URL
@@ -50,6 +51,13 @@ def unit_api(attempt_message: str):
         logger.exception(e)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"{attempt_message} FAILED : {str(e)}",
+        )
+    except RessourceNotFoundException as e:
+        session.rollback()
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
             detail=f"{attempt_message} FAILED : {str(e)}",
         )
     except UnauthorizedException as e:

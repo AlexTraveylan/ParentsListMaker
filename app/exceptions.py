@@ -33,3 +33,7 @@ class UnauthorizedException(APIException):
 
 class CannotCreateStillExistsException(APIException):
     pass
+
+
+class RessourceNotFoundException(APIException):
+    pass
