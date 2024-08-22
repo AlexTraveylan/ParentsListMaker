@@ -4,3 +4,4 @@ fastapi[standard]
 pyjwt
 passlib
 bcrypt
+cryptography
