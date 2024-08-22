@@ -1,4 +1,3 @@
-from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -14,10 +13,8 @@ from app.auth.token import (
 )
 from app.database.unit_of_work import unit_api
 from app.exceptions import CannotCreateStillExistsException, UnauthorizedException
-from app.settings import ACCESS_TOKEN_EXPIRE_MINUTES
 
 auth_router = APIRouter(
-    prefix="/auth",
     tags=["Authentication"],
 )
 
@@ -31,10 +28,9 @@ def login_for_access_token(
         if user is None:
             raise UnauthorizedException("Incorrect username or password")
 
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token({"sub": user.username}, access_token_expires)
+        token = create_access_token({"sub": user.username})
 
-        return Token(access_token=access_token, token_type="bearer")
+    return token
 
 
 @auth_router.post(
@@ -52,25 +48,13 @@ def register_user(
         new_user = User(username=form_data.username, password=form_data.password)
         new_user = USER_SERVICE.create(session, new_user)
 
-        # Create and return token
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": new_user.username},
-            expires_delta=access_token_expires,
-        )
+        token = create_access_token({"sub": new_user.username})
 
-    return Token(access_token=access_token, token_type="bearer")
+    return token
 
 
-@auth_router.get("/users/me/", response_model=User)
+@auth_router.get("/users/me/")
 def read_users_me(
     current_user: Annotated[User, Depends(get_current_active_user)],
-):
+) -> User:
     return current_user
-
-
-@auth_router.get("/users/me/items/")
-def read_own_items(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-):
-    return [{"item_id": "Foo", "owner": current_user.username}]

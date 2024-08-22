@@ -58,6 +58,7 @@ def unit_api(attempt_message: str):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"{attempt_message} FAILED",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     except Exception as e:
         session.rollback()

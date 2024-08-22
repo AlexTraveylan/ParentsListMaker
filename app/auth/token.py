@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta, timezone
+import datetime
+from datetime import timedelta, timezone
 from typing import Annotated
 
 import jwt
@@ -11,8 +12,9 @@ from sqlmodel import Session
 from app.auth.models import USER_SERVICE, User
 from app.commun.crypto import verify_password
 from app.commun.decorators import safe_execution
-from app.database.unit_of_work import unit
-from app.settings import ALGORITHM, SECRET_KEY
+from app.database.unit_of_work import unit_api
+from app.exceptions import UnauthorizedException
+from app.settings import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY
 
 CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -44,41 +46,35 @@ def authenticate_user(session: Session, username: str, password: str) -> User | 
     return user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+def create_access_token(data: dict) -> Token:
+    expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + expires_delta
 
     data.update({"exp": expire})
     encoded_jwt = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
 
-    return encoded_jwt
+    Token(access_token=encoded_jwt, token_type="bearer")
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str | None = payload.get("sub")
+    with unit_api("Trying to get current user") as session:
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            username: str | None = payload.get("sub")
 
-        if username is None:
-            raise CREDENTIALS_EXCEPTION
+            if username is None:
+                raise UnauthorizedException
 
-        token_data = TokenData(username=username)
+            token_data = TokenData(username=username)
 
-    except InvalidTokenError:
-        raise CREDENTIALS_EXCEPTION
+        except InvalidTokenError:
+            raise UnauthorizedException
 
-    with unit() as session:
         user = USER_SERVICE.get_or_none(session, username=token_data.username)
 
-    if user is None:
-        raise CREDENTIALS_EXCEPTION
+        if user is None:
+            raise UnauthorizedException
+
+        session.expunge(user)
 
     return user
-
-
-async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)],
-):
-    return current_user
