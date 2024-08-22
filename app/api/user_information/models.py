@@ -15,8 +15,8 @@ class UserInformation(BaseSQLModel, table=True):
     __tablename__ = "user_informations"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    encrypted_name: str = Field(max_length=64, min_length=2, alias="name")
-    encrypted_first_name: str = Field(max_length=64, min_length=2, alias="first_name")
+    encrypted_name: str = Field(alias="name")
+    encrypted_first_name: str = Field(alias="first_name")
     encrypted_email: Optional[str] = Field(unique=True, default=None, alias="email")
     user_id: int = Field(
         sa_column=Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
