@@ -18,3 +18,18 @@ class NotUniqueException(DatabaseException):
 
 class NotFoundException(DatabaseException):
     pass
+
+
+# API Exception
+
+
+class APIException(ParentsListMakerException):
+    pass
+
+
+class UnauthorizedException(APIException):
+    pass
+
+
+class CannotCreateStillExistsException(APIException):
+    pass
