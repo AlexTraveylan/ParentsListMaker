@@ -14,9 +14,7 @@ class User(BaseSQLModel, table=True):
     __tablename__ = "users"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    encrypted_username: str = Field(
-        unique=True, min_length=2, max_length=64, alias="username"
-    )
+    encrypted_username: str = Field(unique=True, alias="username")
     hashed_password: str = Field(alias="password")
 
     @cached_property
