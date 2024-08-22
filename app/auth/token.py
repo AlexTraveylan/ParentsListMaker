@@ -8,6 +8,7 @@ from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel
 from sqlmodel import Session
 
+from app.api.user_information.models import USER_INFORMATION_SERVICE
 from app.auth.models import USER_SERVICE, User
 from app.commun.crypto import verify_password
 from app.commun.decorators import safe_execution
@@ -55,7 +56,7 @@ def create_access_token(data: dict) -> Token:
     return Token(access_token=encoded_jwt, token_type="bearer")
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
     with unit_api("Trying to get current user") as session:
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -77,3 +78,52 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         session.expunge(user)
 
     return user
+
+
+class UserWithInformations(BaseModel):
+    id: int
+    username: str
+    hashed_password: str
+    name: str
+    first_name: str
+    email: str | None
+    is_email_confirmed: bool
+
+
+async def get_current_user_with_informations(
+    token: Annotated[str, Depends(oauth2_scheme)],
+) -> UserWithInformations:
+    with unit_api("Trying to get current user") as session:
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            username: str | None = payload.get("sub")
+
+            if username is None:
+                raise UnauthorizedException("Username not found in token")
+
+            token_data = TokenData(username=username)
+        except InvalidTokenError:
+            raise UnauthorizedException("Invalid token")
+
+        user = USER_SERVICE.get_or_none(session, username=token_data.username)
+
+        if user is None:
+            raise UnauthorizedException("User not found")
+
+        user_information = USER_INFORMATION_SERVICE.get_or_none(
+            session, user_id=user.id
+        )
+
+        if user_information is None:
+            raise UnauthorizedException("User has no informations")
+
+        user_with_informations = UserWithInformations(
+            id=user.id,
+            username=user.username,
+            hashed_password=user.hashed_password,
+            name=user_information.name,
+            first_name=user_information.first_name,
+            email=user_information.email,
+        )
+
+    return user_with_informations

@@ -5,3 +5,4 @@ pyjwt
 passlib
 bcrypt
 cryptography
+resend

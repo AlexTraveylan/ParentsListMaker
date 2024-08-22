@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.parents_list.api import parents_list_router
 from app.api.user_information.api import user_information_router
 from app.auth.api import auth_router
 
@@ -25,3 +26,4 @@ app = FastAPI()
 
 app.include_router(auth_router)
 app.include_router(user_information_router)
+app.include_router(parents_list_router)

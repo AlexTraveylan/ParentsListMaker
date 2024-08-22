@@ -7,7 +7,7 @@ from sqlmodel import Field
 
 from app.api.user_information.schema import UserInformationSchemaOut
 from app.commun.crypto import decrypt, encrypt
-from app.commun.validator import validate_email, validate_username
+from app.commun.validator import validate_email, validate_string
 from app.database.model_base import BaseSQLModel
 from app.database.repository import Repository
 
@@ -19,6 +19,7 @@ class UserInformation(BaseSQLModel, table=True):
     encrypted_name: str = Field(alias="name")
     encrypted_first_name: str = Field(alias="first_name")
     encrypted_email: Optional[str] = Field(unique=True, default=None, alias="email")
+    is_email_confirmed: bool = Field(default=False)
     user_id: int = Field(
         sa_column=Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     )
@@ -49,13 +50,13 @@ class UserInformation(BaseSQLModel, table=True):
 
     @field_validator("encrypted_name")
     def name_format(cls, value: str) -> str:
-        value = validate_username(value)
+        value = validate_string(value)
 
         return encrypt(value)
 
     @field_validator("encrypted_first_name")
     def first_name_format(cls, value: str) -> str:
-        value = validate_username(value)
+        value = validate_string(value)
 
         return encrypt(value)
 
@@ -63,7 +64,7 @@ class UserInformation(BaseSQLModel, table=True):
         return UserInformationSchemaOut(
             name=self.name,
             first_name=self.first_name,
-            is_email=False if self.encrypted_email is None else True,
+            is_email=self.is_email_confirmed,
         )
 
 

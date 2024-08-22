@@ -34,7 +34,7 @@ def validate_email(value: str) -> str:
     return value
 
 
-def validate_username(value: str) -> str:
+def validate_string(value: str) -> str:
     value = value.strip()
 
     if len(value) < 2:
