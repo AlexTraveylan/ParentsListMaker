@@ -17,3 +17,5 @@ AES_KEY = base64.b64decode(os.getenv("AES_KEY"))
 # Email
 DOMAIN_EMAIL = os.getenv("DOMAIN_EMAIL")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+# TODO: Replace with your actual confirmation URL
+CONFIRMATION_URL = "https://example.com/confirm"
