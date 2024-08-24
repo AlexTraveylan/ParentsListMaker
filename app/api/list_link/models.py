@@ -26,12 +26,13 @@ class ListLink(BaseSQLModel, table=True):
     __tablename__ = "list_links"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    # List informations
-    list_id: int = Field(
-        sa_column=Column(Integer, ForeignKey("parents_lists.id", ondelete="CASCADE"))
+    # List informations None if not linked to a list or Director
+    list_id: Optional[int] = Field(
+        default=None,
+        sa_column=Column(Integer, ForeignKey("parents_lists.id", ondelete="CASCADE")),
     )
-    is_admin: bool
-    status: UserOnListStatus
+    is_admin: Optional[bool] = Field(default=None)
+    status: Optional[UserOnListStatus] = Field(default=None)
     # User informations
     user_id: int = Field(
         sa_column=Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
