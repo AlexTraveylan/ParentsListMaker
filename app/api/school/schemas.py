@@ -1,7 +1,5 @@
 from pydantic import BaseModel
 
-from app.api.list_link.models import SchoolRelation
-
 
 class SchoolSchemaIn(BaseModel):
     school_name: str
@@ -9,7 +7,7 @@ class SchoolSchemaIn(BaseModel):
     zip_code: str
     country: str
     adress: str
-    school_relation: SchoolRelation
+    school_relation: str
 
 
 class SchoolSchemaOut(BaseModel):
