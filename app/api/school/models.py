@@ -8,6 +8,7 @@ from app.api.school.schemas import SchoolSchemaOut
 from app.commun.crypto import decrypt, encrypt
 from app.commun.validator import validate_string
 from app.database.model_base import BaseSQLModel
+from app.database.repository import Repository
 
 
 class School(BaseSQLModel, table=True):
@@ -79,3 +80,10 @@ class School(BaseSQLModel, table=True):
             country=self.country,
             adress=self.adress,
         )
+
+
+class SchoolService(Repository[School]):
+    __model__ = School
+
+
+SCHOOL_SERVICE = SchoolService()

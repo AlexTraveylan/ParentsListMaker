@@ -26,14 +26,17 @@ class ListLink(BaseSQLModel, table=True):
     __tablename__ = "list_links"
 
     id: Optional[int] = Field(default=None, primary_key=True)
+    # List informations
     list_id: int = Field(
         sa_column=Column(Integer, ForeignKey("parents_lists.id", ondelete="CASCADE"))
     )
+    is_admin: bool
+    status: UserOnListStatus
+    # User informations
     user_id: int = Field(
         sa_column=Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     )
-    is_admin: bool
-    status: UserOnListStatus
+    # School informations
     school_relation: SchoolRelation
     school_id: int = Field(
         sa_column=Column(Integer, ForeignKey("schools.id", ondelete="CASCADE"))

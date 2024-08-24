@@ -5,6 +5,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# General
+PRODUCTION = True if os.getenv("PRODUCTION") == "True" else False
+BACKEND_HOST = os.getenv("BACKEND_HOST")
+
 # Database
 DB_URL = os.getenv("DB_URL")
 
@@ -17,5 +21,4 @@ AES_KEY = base64.b64decode(os.getenv("AES_KEY"))
 # Email
 DOMAIN_EMAIL = os.getenv("DOMAIN_EMAIL")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-# TODO: Replace with your actual confirmation URL
-CONFIRMATION_URL = "https://example.com/confirm"
+CONFIRMATION_URL = f"{BACKEND_HOST}/confirmation-email"
