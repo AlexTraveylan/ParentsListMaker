@@ -56,7 +56,7 @@ def add_email_to_user(
 
 
 @email_router.get("/{token}")
-def confirm_email(token: Annotated[str, Path(title="Token")]) -> UserInformation:
+def confirm_email(token: Annotated[str, Path(title="token")]) -> UserInformation:
     with unit_api("Trying to confirm email") as session:
         email_confirmation = EMAIL_CONFIRMATION_TOKEN_SERVICE.get_or_none(
             session, token=token

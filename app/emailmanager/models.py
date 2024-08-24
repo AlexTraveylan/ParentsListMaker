@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Integer
+from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field
 
 from app.database.model_base import BaseSQLModel
@@ -16,7 +16,7 @@ class EmailConfirmationToken(BaseSQLModel, table=True):
     is_confirmed: bool = Field(default=False)
     created_at: datetime = Field(default=datetime.now(timezone.utc))
     user_id: int = Field(
-        sa_column=Field(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+        sa_column=Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     )
 
 

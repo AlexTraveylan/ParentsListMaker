@@ -8,6 +8,7 @@ from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel
 from sqlmodel import Session
 
+from app.api.list_link.models import LIST_LINK_SERVICE, ListLink
 from app.api.user_information.models import USER_INFORMATION_SERVICE
 from app.auth.models import USER_SERVICE, User
 from app.commun.crypto import verify_password
@@ -127,3 +128,33 @@ async def get_current_user_with_informations(
         )
 
     return user_with_informations
+
+
+async def get_current_user_link(
+    token: Annotated[str, Depends(oauth2_scheme)],
+) -> ListLink:
+    with unit_api("Trying to get current user") as session:
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            username: str | None = payload.get("sub")
+
+            if username is None:
+                raise UnauthorizedException("Username not found in token")
+
+            token_data = TokenData(username=username)
+        except InvalidTokenError:
+            raise UnauthorizedException("Invalid token")
+
+        user = USER_SERVICE.get_or_none(session, username=token_data.username)
+
+        if user is None:
+            raise UnauthorizedException("User not found")
+
+        user_link = LIST_LINK_SERVICE.get_or_none(session, user_id=user.id)
+
+        if user_link is None:
+            raise UnauthorizedException("User has no link")
+
+        session.expunge(user_link)
+
+    return user_link
