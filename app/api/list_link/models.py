@@ -4,16 +4,22 @@ from typing import Optional
 from sqlalchemy import Column, ForeignKey, Integer
 from sqlmodel import Field
 
+from app.api.school.models import *  # Be sure import School before ListLink
 from app.database.model_base import BaseSQLModel
 from app.database.repository import Repository
 
 
-class UserOnListStatus(Enum, str):
+class UserOnListStatus(Enum):
     WAITING = "waiting"
     LEADER = "leader"
     HOLDER = "holder"
     SUBSTITUTE = "substitute"
     REJECTED = "rejected"
+
+
+class SchoolRelation(Enum):
+    DIRECTION = "direction"
+    PARENT = "parent"
 
 
 class ListLink(BaseSQLModel, table=True):
@@ -28,6 +34,10 @@ class ListLink(BaseSQLModel, table=True):
     )
     is_admin: bool
     status: UserOnListStatus
+    school_relation: SchoolRelation
+    school_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("schools.id", ondelete="CASCADE"))
+    )
 
 
 class ListLinkService(Repository[ListLink]):

@@ -1,7 +1,10 @@
 import pytest
 from cryptography.fernet import Fernet
+from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
+
+from app.main import app
 
 
 @pytest.fixture(name="engine")
@@ -22,3 +25,8 @@ def session_fixture(engine):
 @pytest.fixture
 def key():
     return Fernet.generate_key()
+
+
+@pytest.fixture
+def client():
+    return TestClient(app)
