@@ -6,7 +6,6 @@ from app.api.list_link.models import ListLink
 from app.api.parents_list.models import ParentsList
 from app.api.school.models import School
 from app.auth.models import User
-from app.commun.crypto import encrypt
 
 TEST_PASSWORD = "Password123*"
 
@@ -18,7 +17,7 @@ class UserFactory(SQLAlchemyModelFactory):
 
     id = factory.Sequence(lambda n: n)
     username: str = factory.Faker("name")
-    hashed_password: str = encrypt(TEST_PASSWORD)
+    hashed_password: str = factory.LazyAttribute(lambda _: TEST_PASSWORD)
 
 
 def get_user_factory(session: Session, **kwargs) -> User:
