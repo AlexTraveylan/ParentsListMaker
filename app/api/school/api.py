@@ -27,7 +27,7 @@ school_router = APIRouter(
 def get_all_schools() -> list[School]:
     with unit_api("Tentative de récupération de tous les établissements") as session:
         schools = SCHOOL_SERVICE.get_all(session)
-        session.expunge(schools)
+        session.expunge_all()
 
     return schools
 
@@ -106,22 +106,3 @@ def join_school(
         session.expunge(school)
 
     return school.to_decrypted()
-
-
-@school_router.delete("/leave/{school_id}", status_code=status.HTTP_204_NO_CONTENT)
-def leave_school(
-    current_user: Annotated[User, Depends(get_current_user)],
-    school_id: int,
-) -> None:
-    with unit_api("Tentative de quitter un établissement") as session:
-        school = SCHOOL_SERVICE.get_or_none(session, id=school_id)
-        if school is None:
-            raise RessourceNotFoundException("Établissement non trouvé")
-
-        school_link = SCHOOL_LINK_SERVICE.get_or_none(
-            session, user_id=current_user.id, school_id=school_id
-        )
-        if school_link is None:
-            raise RessourceNotFoundException("L'utilisateur n'est pas membre")
-
-        SCHOOL_LINK_SERVICE.delete(session, school_link.id)

@@ -43,14 +43,14 @@ class ListLinkService(Repository[ListLink]):
     ) -> list[ListLink]:
         statement = select(ListLink).where(ListLink.user_id == user_id)
 
-        return session.exec(statement).all()
+        return [item[0] for item in session.exec(statement).all()]
 
     def get_all_list_links_by_list_id(
         self, session: Session, list_id: int
     ) -> list[ListLink]:
         statement = select(ListLink).where(ListLink.list_id == list_id)
 
-        return session.exec(statement).all()
+        return [item[0] for item in session.exec(statement).all()]
 
 
 class SchoolLink(BaseSQLModel, table=True):
@@ -74,7 +74,7 @@ class SchoolLinkService(Repository[SchoolLink]):
     ) -> list[SchoolLink]:
         statement = select(SchoolLink).where(SchoolLink.user_id == user_id)
 
-        return session.exec(statement).all()
+        return [item[0] for item in session.exec(statement).all()]
 
 
 LIST_LINK_SERVICE = ListLinkService()

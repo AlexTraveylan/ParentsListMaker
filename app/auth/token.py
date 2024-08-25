@@ -117,8 +117,8 @@ async def get_current_user_with_informations(
         if user_information is None:
             raise UnauthorizedException("User has no informations")
 
-        list_link = LIST_LINK_SERVICE.get_all_list_links_by_user_id(session, user.id)
-        school_link = SCHOOL_LINK_SERVICE.get_all_school_links_by_user_id(
+        list_links = LIST_LINK_SERVICE.get_all_list_links_by_user_id(session, user.id)
+        school_links = SCHOOL_LINK_SERVICE.get_all_school_links_by_user_id(
             session, user.id
         )
 
@@ -127,8 +127,8 @@ async def get_current_user_with_informations(
             username=user.username,
             email=user_information.email,
             is_email_confirmed=user_information.is_email_confirmed,
-            parents_list_ids=[link.list_id for link in list_link],
-            school_ids=[link.school_id for link in school_link],
+            parents_list_ids=[link.list_id for link in list_links],
+            school_ids=[link.school_id for link in school_links],
         )
 
     return user_with_informations

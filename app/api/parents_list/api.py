@@ -34,6 +34,17 @@ parents_list_router = APIRouter(
 )
 
 
+@parents_list_router.get("/", status_code=status.HTTP_200_OK)
+def get_all_parents_lists() -> list[ParentsList]:
+    with unit_api(
+        "Tentative de récupération de toutes les listes de parents"
+    ) as session:
+        parents_lists = PARENTS_LIST_SERVICE.get_all(session)
+        session.expunge_all()
+
+    return parents_lists
+
+
 @parents_list_router.post("/", status_code=status.HTTP_201_CREATED)
 def create_parents_list(
     current_user: Annotated[
@@ -153,6 +164,15 @@ def leave_parents_list(
             list_id=list_id,
         )
 
+        parent_list = PARENTS_LIST_SERVICE.get_or_none(session, id=list_id)
+        if parent_list is None:
+            raise RessourceNotFoundException("La liste de parents n'existe pas")
+
+        if parent_list.creator_id == current_user.id:
+            raise RessourceNotFoundException(
+                "Tu ne peux pas quitter la liste de parents que tu as créée, contacte un administrateur"
+            )
+
         if requested_user_link is None:
             raise RessourceNotFoundException("Tu n'as pas rejoint cette liste")
 
@@ -203,14 +223,17 @@ def accept_parents_list(
             session, list_to_join.id
         )
 
-        nb_members = len(list_links)
+        nb_members = len(
+            list(filter(lambda x: x.status == UserOnListStatus.ACCEPTED, list_links))
+        )
 
         new_list_link = LIST_LINK_SERVICE.update(
             session,
             user_to_accept_list_link.id,
             is_admin=False,
             status=UserOnListStatus.ACCEPTED,
-            position_in_list=nb_members + 1,
+            # position_in_list=nb_members + 1,
+            position_in_list=2,
         )
 
         session.expunge(new_list_link)

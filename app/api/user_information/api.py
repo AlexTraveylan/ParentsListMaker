@@ -58,7 +58,9 @@ def create_users_informations(
             )
             EMAIL_CONFIRMATION_TOKEN_SERVICE.create(session, email_confirmation_token)
             html = html_wrapper_for_confirmation_email_with_token(token)
-            send_contact_message("Confirmez votre email", html, to=item.email)
+            send_contact_message(
+                "ParentsListMaker - Confirmez votre email", html, to=item.email
+            )
 
         session.expunge(item)
 

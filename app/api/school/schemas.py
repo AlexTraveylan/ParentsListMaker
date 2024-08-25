@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -7,7 +9,7 @@ class SchoolSchemaIn(BaseModel):
     zip_code: str
     country: str
     adress: str
-    school_relation: str
+    school_relation: Literal["parent", "direction"]
 
 
 class SchoolSchemaOut(BaseModel):

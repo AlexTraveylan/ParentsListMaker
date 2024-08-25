@@ -15,3 +15,12 @@ class LinkListSchemaOut(BaseModel):
     is_admin: bool
     status: str
     school_relation: str
+
+
+class ParentInformation(BaseModel):
+    first_name: str
+    last_name: str
+    position_in_list: int
+    is_email: bool
+    is_admin: bool
+    is_creator: bool
