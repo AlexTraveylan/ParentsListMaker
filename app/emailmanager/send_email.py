@@ -1,6 +1,6 @@
 import resend
 
-from app.settings import CONFIRMATION_URL, DOMAIN_EMAIL
+from app.settings import ADMINSTRATOR_EMAIL, CONFIRMATION_URL, DOMAIN_EMAIL
 
 
 def send_contact_message(subject: str, html: str, *, to: str) -> dict:
@@ -110,4 +110,56 @@ def html_wrapper_for_join_request_notification(
     </body>
     </html>
     """
+    return html
+
+
+def html_wrapper_for_introduction_email(sender_email: str, message: str) -> str:
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Mise en relation</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }}
+            .message-box {{
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                padding: 15px;
+                margin-top: 20px;
+            }}
+            .contact-info {{
+                margin-top: 20px;
+                font-style: italic;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Nouveau message de mise en relation</h1>
+        <p>Un utilisateur souhaite entrer en contact avec vous. Voici les détails :</p>
+        
+        <div class="message-box">
+            <p><strong>Email de l'expéditeur :</strong> {sender_email}</p>
+            <p><strong>Message :</strong></p>
+            <p>{message}</p>
+        </div>
+        
+        <p>Ne répondez pas directement à cet email. Contactez la personne avec l'email {sender_email}</p>
+        
+        <div class="contact-info">
+            <p>Si vous rencontrez des problèmes ou si vous souhaitez signaler un abus, veuillez contacter l'admin : {ADMINSTRATOR_EMAIL}</p>
+        </div>
+    </body>
+    </html>
+    """
+
     return html
