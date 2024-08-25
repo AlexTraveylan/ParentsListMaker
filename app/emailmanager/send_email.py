@@ -65,3 +65,49 @@ def html_wrapper_for_confirmation_email_with_token(token: str) -> str:
     """
 
     return html
+
+
+def html_wrapper_for_join_request_notification(
+    username: str, list_name: str, message: str
+) -> str:
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Demande de rejoindre votre liste</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }}
+            .btn {{
+                display: inline-block;
+                padding: 10px 20px;
+                background-color: #007bff;
+                color: #ffffff;
+                text-decoration: none;
+                border-radius: 5px;
+                margin-top: 20px;
+            }}
+            .btn:hover {{
+                background-color: #0056b3;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Nouvelle demande pour rejoindre votre liste</h1>
+        <p>Bonjour,</p>
+        <p>Nous vous informons que l'utilisateur <strong>{username}</strong> souhaite rejoindre votre liste <strong>{list_name}</strong>.</p>
+        <p>Pour gérer cette demande, veuillez vous connecter à votre compte et accéder à la section de gestion de votre liste.</p>
+        <p>Cet utilisateur a également ajouté le message suivant :</p>
+        <p>{message}</p>
+    </body>
+    </html>
+    """
+    return html

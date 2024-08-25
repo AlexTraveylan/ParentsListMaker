@@ -32,12 +32,14 @@ def create_users_informations(
     current_user: Annotated[User, Depends(get_current_user)],
     user_information: UserInformationSchemaIn,
 ) -> UserInformation:
-    with unit_api("Trying to create user information") as session:
+    with unit_api("Tentative de création d'informations utilisateur") as session:
         existing_user_information = USER_INFORMATION_SERVICE.get_or_none(
             session, user_id=current_user.id
         )
         if existing_user_information is not None:
-            raise CannotCreateStillExistsException("User already has user information")
+            raise CannotCreateStillExistsException(
+                "Utilisateur a déjà des informations"
+            )
 
         item = UserInformation(
             name=user_information.name,
@@ -67,13 +69,13 @@ def create_users_informations(
 def read_users_informations(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> UserInformationSchemaOut:
-    with unit_api("Trying to read user informations") as session:
+    with unit_api("Tentative de lecture des informations utilisateur") as session:
         user_informations = USER_INFORMATION_SERVICE.get_or_none(
             session, user_id=current_user.id
         )
 
         if user_informations is None:
-            raise RessourceNotFoundException("User has no user informations")
+            raise RessourceNotFoundException("Utilisateur n'a pas d'informations")
 
         session.expunge(user_informations)
 

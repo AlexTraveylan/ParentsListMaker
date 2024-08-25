@@ -27,10 +27,10 @@ auth_router = APIRouter(
 def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
-    with unit_api("Trying to authenticate user") as session:
+    with unit_api("Tentative de connexion") as session:
         user = authenticate_user(session, form_data.username, form_data.password)
         if user is None:
-            raise UnauthorizedException("Incorrect username or password")
+            raise UnauthorizedException("Nom d'utilisateur ou mot de passe incorrect")
 
         token = create_access_token({"sub": user.username})
 
@@ -41,11 +41,11 @@ def login_for_access_token(
 def register_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
-    with unit_api("Trying to register user") as session:
+    with unit_api("Tentative de création d'utilisateur") as session:
         existing_user = USER_SERVICE.get_or_none(session, username=form_data.username)
 
         if existing_user is not None:
-            raise CannotCreateStillExistsException("Username already registered")
+            raise CannotCreateStillExistsException("Nom d'utilisateur déjà enregistré")
 
         new_user = User(username=form_data.username, password=form_data.password)
         new_user = USER_SERVICE.create(session, new_user)
@@ -66,10 +66,10 @@ def read_users_me(
 def delete_users_me(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
-    with unit_api("Trying to delete user") as session:
+    with unit_api("Tentative de suppression de l'utilisateur") as session:
         is_deleted = USER_SERVICE.delete(session, current_user.id)
 
         if is_deleted is False:
-            raise RessourceNotFoundException("Cannot delete user")
+            raise RessourceNotFoundException("Impossible de supprimer l'utilisateur")
 
     return None

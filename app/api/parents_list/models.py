@@ -18,6 +18,9 @@ class ParentsList(BaseSQLModel, table=True):
     school_id: int = Field(
         sa_column=Column(Integer, ForeignKey("schools.id", ondelete="CASCADE"))
     )
+    creator_id: int = Field(
+        sa_column=Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    )
 
     @field_validator("list_name")
     def list_name_format(cls, value: str) -> str:

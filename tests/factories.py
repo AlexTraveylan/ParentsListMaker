@@ -2,7 +2,7 @@ import factory
 from factory.alchemy import SQLAlchemyModelFactory
 from sqlmodel import Session
 
-from app.api.list_link.models import ListLink
+from app.api.links.models import ListLink
 from app.api.parents_list.models import ParentsList
 from app.api.school.models import School
 from app.auth.models import User

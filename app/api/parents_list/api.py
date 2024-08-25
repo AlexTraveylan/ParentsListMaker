@@ -1,18 +1,28 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Body, Depends, Path, status
+from pydantic import BaseModel, Field
 
-from app.api.list_link.models import LIST_LINK_SERVICE, ListLink, UserOnListStatus
+from app.api.links.models import (
+    LIST_LINK_SERVICE,
+    ListLink,
+    UserOnListStatus,
+)
 from app.api.parents_list.models import PARENTS_LIST_SERVICE, ParentsList
 from app.api.parents_list.schema import ParentsListSchema
+from app.api.school.models import SCHOOL_SERVICE
+from app.api.user_information.models import USER_INFORMATION_SERVICE
 from app.auth.models import USER_SERVICE, User
 from app.auth.token import (
     UserWithInformations,
     get_current_user,
-    get_current_user_link,
     get_current_user_with_informations,
 )
 from app.database.unit_of_work import unit_api
+from app.emailmanager.send_email import (
+    html_wrapper_for_join_request_notification,
+    send_contact_message,
+)
 from app.exceptions import (
     RessourceNotFoundException,
     UnauthorizedException,
@@ -32,195 +42,177 @@ def create_parents_list(
     payload: ParentsListSchema,
 ) -> ParentsListSchema:
     with unit_api("Tentative de création d'une liste de parents") as session:
-        if current_user.email is None:
+        if current_user.email is None or not current_user.is_email_confirmed:
             raise RessourceNotFoundException(
                 "Tu ne peux pas créer une liste de parents sans email confirmé"
             )
+
+        school = SCHOOL_SERVICE.get_or_none(session, id=payload.school_id)
+        if school is None:
+            raise RessourceNotFoundException("Impossible de trouver l'école")
 
         new_parent_list = ParentsList(
             list_name=payload.list_name,
             holder_length=payload.holder_length,
             school_id=payload.school_id,
+            creator_id=current_user.id,
         )
         new_parent_list = PARENTS_LIST_SERVICE.create(session, new_parent_list)
 
-        existing_link = LIST_LINK_SERVICE.get_or_none(session, user_id=current_user.id)
-
-        if existing_link is None:
-            raise RessourceNotFoundException("Tu n'as pas renseigné ton école")
-
-        if existing_link.list_id is not None:
-            raise RessourceNotFoundException(
-                "Tu ne peux pas créer une liste de parents si tu es déjà membre d'une, quitte la liste d'abord"
-            )
-
-        LIST_LINK_SERVICE.update(
-            session,
-            existing_link.id,
-            list_id=new_parent_list.id,
+        list_link = ListLink(
+            status=UserOnListStatus.ACCEPTED,
+            position_in_list=1,
             is_admin=True,
-            status=UserOnListStatus.LEADER,
+            list_id=new_parent_list.id,
+            user_id=current_user.id,
         )
+
+        LIST_LINK_SERVICE.create(session, list_link)
 
         session.expunge(new_parent_list)
 
     return new_parent_list
 
 
-@parents_list_router.get("/join/{list_id}", status_code=status.HTTP_200_OK)
+class Message(BaseModel):
+    message: str = Field(min_length=1, max_length=1000)
+
+
+@parents_list_router.post("/join/{list_id}", status_code=status.HTTP_200_OK)
 def ask_for_join_parents_list(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[
+        UserWithInformations, Depends(get_current_user_with_informations)
+    ],
     list_id: int = Annotated[int, Path(title="list_id")],
+    payload: Message = Annotated[Message, Body(embed=True)],
 ) -> ListLink:
     with unit_api("Tentative d'ajout d'un membre à une liste de parents") as session:
-        existing_parents_list = PARENTS_LIST_SERVICE.get_or_none(session, id=list_id)
-
-        if existing_parents_list is None:
+        list_to_join = PARENTS_LIST_SERVICE.get_or_none(session, id=list_id)
+        if list_to_join is None:
             raise RessourceNotFoundException("La liste de parents n'existe pas")
 
-        existing_link = LIST_LINK_SERVICE.get_or_none(session, user_id=current_user.id)
+        if list_to_join.id in current_user.parents_list_ids:
+            raise RessourceNotFoundException("Tu as déjà rejoint cette liste")
 
-        if existing_link is None:
-            raise RessourceNotFoundException("Tu n'as pas rejoint d'école")
+        school = SCHOOL_SERVICE.get_or_none(session, id=list_to_join.school_id)
+        if school is None:
+            raise RessourceNotFoundException("Impossible de trouver l'école")
 
-        if existing_link.list_id is not None:
+        if school.id not in current_user.school_ids:
+            raise RessourceNotFoundException("Tu ne fais pas partie de cette école")
+
+        new_list_link = ListLink(
+            status=UserOnListStatus.WAITING,
+            position_in_list=0,  # 0 means in waiting position
+            is_admin=False,
+            list_id=list_to_join.id,
+            user_id=current_user.id,
+        )
+
+        new_list_link_created = LIST_LINK_SERVICE.create(session, new_list_link)
+
+        session.expunge(new_list_link_created)
+
+        creator_user_info = USER_INFORMATION_SERVICE.get_or_none(
+            session,
+            id=list_to_join.creator_id,
+        )
+        if creator_user_info is None:
             raise RessourceNotFoundException(
-                "Tu ne peux pas rejoindre une autre liste de parents, quitte la liste actuelle d'abord"
+                "Impossible de trouver le créateur de la liste"
             )
 
-        updated_link = LIST_LINK_SERVICE.update(
-            session,
-            existing_link.id,
-            list_id=existing_parents_list.id,
-            is_admin=False,
-            status=UserOnListStatus.WAITING,
+        if creator_user_info.email is None or not creator_user_info.is_email_confirmed:
+            raise RessourceNotFoundException(
+                "Le créateur de la liste n'a pas confirmé son email"
+            )
+
+        html = html_wrapper_for_join_request_notification(
+            username=current_user.username,
+            list_name=list_to_join.list_name,
+            message=payload.message,
+        )
+        send_contact_message(
+            f"ParentsListMaker - {current_user.username} a demandé à rejoindre votre liste",
+            html,
+            to=creator_user_info.email,
         )
 
-        session.expunge(updated_link)
-
-    return updated_link
+    return new_list_link_created
 
 
-@parents_list_router.patch("/leave", status_code=status.HTTP_200_OK)
+@parents_list_router.delete("/leave/{list_id}", status_code=status.HTTP_204_NO_CONTENT)
 def leave_parents_list(
-    user_link: Annotated[ListLink, Depends(get_current_user_link)],
-) -> ListLink:
+    current_user: Annotated[User, Depends(get_current_user)],
+    list_id: int = Annotated[int, Path(title="list_id")],
+) -> None:
     with unit_api("Tentative de quitter une liste de parents") as session:
-        LIST_LINK_SERVICE.update(
+        requested_user_link = LIST_LINK_SERVICE.get_or_none(
             session,
-            user_link.id,
-            is_admin=None,
-            list_id=None,
-            status=None,
+            user_id=current_user.id,
+            list_id=list_id,
         )
 
-        session.expunge(user_link)
+        if requested_user_link is None:
+            raise RessourceNotFoundException("Tu n'as pas rejoint cette liste")
 
-    return user_link
+        LIST_LINK_SERVICE.delete(session, requested_user_link.id)
 
 
-@parents_list_router.patch("/accept/{user_id}", status_code=status.HTTP_200_OK)
+@parents_list_router.patch(
+    "/accept/{user_id}/{list_id}", status_code=status.HTTP_200_OK
+)
 def accept_parents_list(
-    request_user_link: Annotated[ListLink, Depends(get_current_user_link)],
+    admin_user: Annotated[
+        UserWithInformations, Depends(get_current_user_with_informations)
+    ],
     user_id: int = Annotated[int, Path(title="user_id")],
+    list_id: int = Annotated[int, Path(title="list_id")],
 ) -> ListLink:
     with unit_api(f"Tentative d'accepter l'utilisateur {user_id}") as session:
-        if request_user_link.is_admin is False:
-            raise UnauthorizedException(
-                "Tu dois être admin de la liste pour cette action"
-            )
+        list_to_join = PARENTS_LIST_SERVICE.get_or_none(session, id=list_id)
+        if list_to_join is None:
+            raise RessourceNotFoundException("La liste n'existe pas")
+
+        admin_user_list_link = LIST_LINK_SERVICE.get_or_none(
+            session,
+            user_id=admin_user.id,
+            list_id=list_to_join.id,
+        )
+        if admin_user_list_link is None:
+            raise RessourceNotFoundException("Tu n'as pas rejoint cette liste")
+
+        if admin_user_list_link.is_admin is False:
+            raise UnauthorizedException("Tu n'est pas admin de cette liste")
 
         user_to_accept = USER_SERVICE.get_or_none(session, id=user_id)
         if user_to_accept is None:
             raise RessourceNotFoundException("L'utilisateur n'existe pas")
 
-        user_to_accept_link = LIST_LINK_SERVICE.get_or_none(session, user_id=user_id)
-        if user_to_accept_link is None:
-            raise RessourceNotFoundException(
-                "L'utilisateur n'a pas demander à rejoindre une liste"
-            )
-
-        if user_to_accept_link.list_id != request_user_link.list_id:
-            raise UnauthorizedException(
-                "L'utilisateur n'a pas demander à rejoindre ta liste"
-            )
-
-        if user_to_accept_link.status is not UserOnListStatus.WAITING:
-            raise UnauthorizedException("L'utilisateur n'est pas en attente")
-
-        parent_list = PARENTS_LIST_SERVICE.get_or_none(
-            session, id=user_to_accept_link.list_id
-        )
-        if parent_list is None:
-            raise RessourceNotFoundException("Ta liste n'existe pas")
-
-        nb_holders = LIST_LINK_SERVICE.get_number_of_holders(
-            session, user_to_accept_link.list_id
-        )
-        nb_substitutes = LIST_LINK_SERVICE.get_number_of_substitutes(
-            session, user_to_accept_link.list_id
-        )
-
-        if nb_holders + nb_substitutes >= parent_list.holder_length * 2:
-            raise RessourceNotFoundException("La liste est pleine")
-
-        if nb_holders >= parent_list.holder_length:
-            LIST_LINK_SERVICE.update(
-                session,
-                user_to_accept_link.id,
-                is_admin=False,
-                status=UserOnListStatus.HOLDER,
-            )
-        else:
-            LIST_LINK_SERVICE.update(
-                session,
-                user_to_accept_link.id,
-                is_admin=False,
-                status=UserOnListStatus.SUBSTITUTE,
-            )
-
-        session.expunge(user_to_accept_link)
-
-    return user_to_accept_link
-
-
-@parents_list_router.patch("/reject/{user_id}", status_code=status.HTTP_200_OK)
-def reject_parents_list(
-    user_link: Annotated[ListLink, Depends(get_current_user_link)],
-    user_id: int = Annotated[int, Path(title="user_id")],
-) -> ListLink:
-    with unit_api("Tentative de rejeter l'utilisateur {user_id}") as session:
-        if user_link.is_admin is False:
-            raise UnauthorizedException(
-                "Tu dois être admin de la liste pour cette action"
-            )
-
-        user_to_reject = USER_SERVICE.get_or_none(session, id=user_id)
-        if user_to_reject is None:
-            raise RessourceNotFoundException("L'utilisateur n'existe pas")
-
-        user_to_reject_link = LIST_LINK_SERVICE.get_or_none(session, user_id=user_id)
-        if user_to_reject_link is None:
-            raise RessourceNotFoundException(
-                "L'utilisateur n'a pas demandé à rejoindre de liste"
-            )
-
-        if user_to_reject_link.list_id != user_link.list_id:
-            raise UnauthorizedException(
-                "L'utilisateur n'essaie pas de rejoindre ta liste"
-            )
-
-        if user_to_reject_link.status is not UserOnListStatus.WAITING:
-            raise UnauthorizedException("L'utilisateur n'est pas en attente")
-
-        LIST_LINK_SERVICE.update(
+        user_to_accept_list_link = LIST_LINK_SERVICE.get_or_none(
             session,
-            user_to_reject_link.id,
-            is_admin=None,
-            list_id=None,
-            status=None,
+            user_id=user_to_accept.id,
+            list_id=list_to_join.id,
+        )
+        if user_to_accept_list_link is None:
+            raise RessourceNotFoundException(
+                "L'utilisateur n'a pas demandé à rejoindre cette liste"
+            )
+
+        list_links = LIST_LINK_SERVICE.get_all_list_links_by_list_id(
+            session, list_to_join.id
         )
 
-        session.expunge(user_to_reject_link)
+        nb_members = len(list_links)
 
-    return user_to_reject_link
+        new_list_link = LIST_LINK_SERVICE.update(
+            session,
+            user_to_accept_list_link.id,
+            is_admin=False,
+            status=UserOnListStatus.ACCEPTED,
+            position_in_list=nb_members + 1,
+        )
+
+        session.expunge(new_list_link)
+
+    return new_list_link

@@ -8,7 +8,7 @@ from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel
 from sqlmodel import Session
 
-from app.api.list_link.models import LIST_LINK_SERVICE, ListLink
+from app.api.links.models import LIST_LINK_SERVICE, SCHOOL_LINK_SERVICE
 from app.api.user_information.models import USER_INFORMATION_SERVICE
 from app.auth.models import USER_SERVICE, User
 from app.commun.crypto import verify_password
@@ -84,11 +84,10 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
 class UserWithInformations(BaseModel):
     id: int
     username: str
-    hashed_password: str
-    name: str
-    first_name: str
     email: str | None
     is_email_confirmed: bool
+    parents_list_ids: list[int]
+    school_ids: list[int]
 
 
 async def get_current_user_with_informations(
@@ -118,43 +117,18 @@ async def get_current_user_with_informations(
         if user_information is None:
             raise UnauthorizedException("User has no informations")
 
+        list_link = LIST_LINK_SERVICE.get_all_list_links_by_user_id(session, user.id)
+        school_link = SCHOOL_LINK_SERVICE.get_all_school_links_by_user_id(
+            session, user.id
+        )
+
         user_with_informations = UserWithInformations(
             id=user.id,
             username=user.username,
-            hashed_password=user.hashed_password,
-            name=user_information.name,
-            first_name=user_information.first_name,
             email=user_information.email,
+            is_email_confirmed=user_information.is_email_confirmed,
+            parents_list_ids=[link.list_id for link in list_link],
+            school_ids=[link.school_id for link in school_link],
         )
 
     return user_with_informations
-
-
-async def get_current_user_link(
-    token: Annotated[str, Depends(oauth2_scheme)],
-) -> ListLink:
-    with unit_api("Trying to get current user") as session:
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            username: str | None = payload.get("sub")
-
-            if username is None:
-                raise UnauthorizedException("Username not found in token")
-
-            token_data = TokenData(username=username)
-        except InvalidTokenError:
-            raise UnauthorizedException("Invalid token")
-
-        user = USER_SERVICE.get_or_none(session, username=token_data.username)
-
-        if user is None:
-            raise UnauthorizedException("User not found")
-
-        user_link = LIST_LINK_SERVICE.get_or_none(session, user_id=user.id)
-
-        if user_link is None:
-            raise UnauthorizedException("User has no link")
-
-        session.expunge(user_link)
-
-    return user_link
