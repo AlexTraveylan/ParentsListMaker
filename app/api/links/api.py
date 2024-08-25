@@ -199,7 +199,9 @@ def down_parent_position(
         )
 
 
-@links_api.patch("/remove/{list_id}/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@links_api.patch(
+    "/make-admin/{list_id}/{user_id}", status_code=status.HTTP_204_NO_CONTENT
+)
 def make_user_admin(
     admin_user: Annotated[
         UserWithInformations, Depends(get_current_user_with_informations)
