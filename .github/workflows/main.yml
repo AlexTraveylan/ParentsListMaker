@@ -18,12 +18,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Set PYTHONPATH
+      - name: Set .env file
         run: |
           echo "PYTHONPATH=${{ github.workspace }}" >> $GITHUB_ENV
           echo "DB_URL=${{ secrets.DB_URL }}" >> .env
-          echo "SECRET_KEY=${{ secrets.AES_KEY }}" >> .env
-          echo "AES_KEY=${{ secrets.API_KEY }}" >> .env
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
+          echo "AES_KEY=${{ secrets.AES_KEY }}" >> .env
           echo "DOMAIN_EMAIL=${{ secrets.DOMAIN_EMAIL }}" >> .env
           echo "RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}" >> .env
           echo "PRODUCTION=${{ secrets.PRODUCTION }}" >> .env
