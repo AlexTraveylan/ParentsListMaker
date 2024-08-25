@@ -197,3 +197,44 @@ def down_parent_position(
             parent_to_toogle.id,
             position_in_list=initial_position,
         )
+
+
+@links_api.patch("/remove/{list_id}/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+def make_user_admin(
+    admin_user: Annotated[
+        UserWithInformations, Depends(get_current_user_with_informations)
+    ],
+    list_id: int = Annotated[int, Path(title="list_id")],
+    user_id: int = Annotated[int, Path(title="user_id")],
+) -> None:
+    with unit_api("Tentative de changer la position d'un membre") as session:
+        parent_list = PARENTS_LIST_SERVICE.get_or_none(session, id=list_id)
+        if parent_list is None:
+            raise RessourceNotFoundException("La liste non trouvée")
+
+        if parent_list.id not in admin_user.parents_list_ids:
+            raise UnauthorizedException("Tu n'as pas accès à cette liste")
+
+        admin_user_list_link = LIST_LINK_SERVICE.get_or_none(
+            session,
+            user_id=admin_user.id,
+            list_id=parent_list.id,
+        )
+
+        if admin_user_list_link.is_admin is False:
+            raise UnauthorizedException("Tu n'es pas admin de cette liste")
+
+        user_to_make_admin = LIST_LINK_SERVICE.get_or_none(
+            session,
+            user_id=user_id,
+            list_id=parent_list.id,
+        )
+
+        if user_to_make_admin is None:
+            raise RessourceNotFoundException("L'utilisateur n'existe pas")
+
+        LIST_LINK_SERVICE.update(
+            session,
+            user_to_make_admin.id,
+            is_admin=True,
+        )
