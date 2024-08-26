@@ -24,12 +24,13 @@ school_router = APIRouter(
 
 
 @school_router.get("/", status_code=status.HTTP_200_OK)
-def get_all_schools() -> list[School]:
+def get_all_schools() -> list[SchoolSchemaOut]:
     with unit_api("Tentative de récupération de tous les établissements") as session:
         schools = SCHOOL_SERVICE.get_all(session)
-        session.expunge_all()
 
-    return schools
+        schools_decrypted = [school.to_decrypted() for school in schools]
+
+    return schools_decrypted
 
 
 @school_router.post("/", status_code=status.HTTP_201_CREATED)
