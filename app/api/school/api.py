@@ -11,7 +11,11 @@ from app.api.links.models import (
 from app.api.school.models import SCHOOL_SERVICE, School
 from app.api.school.schemas import SchoolSchemaIn, SchoolSchemaOut
 from app.auth.models import User
-from app.auth.token import get_current_user
+from app.auth.token import (
+    UserWithInformations,
+    get_current_user,
+    get_current_user_with_informations,
+)
 from app.database.unit_of_work import unit_api
 from app.exceptions import CannotCreateStillExistsException, RessourceNotFoundException
 
@@ -21,6 +25,25 @@ school_router = APIRouter(
     tags=["School"],
     prefix="/schools",
 )
+
+
+@school_router.get("/me", status_code=status.HTTP_200_OK)
+def get_school_of_user(
+    current_user: Annotated[
+        UserWithInformations, Depends(get_current_user_with_informations)
+    ],
+) -> list[SchoolSchemaOut]:
+    with unit_api(
+        "Tentative de récupération de l'établissement de l'utilisateur"
+    ) as session:
+        schools = []
+        for school_id in current_user.school_ids:
+            school = SCHOOL_SERVICE.get_or_none(session, id=school_id)
+            if school is None:
+                raise RessourceNotFoundException("Établissement non trouvé")
+            schools.append(school.to_decrypted())
+
+    return schools
 
 
 @school_router.get("/", status_code=status.HTTP_200_OK)
