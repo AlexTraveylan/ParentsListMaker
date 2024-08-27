@@ -7,9 +7,11 @@ from app.auth.models import USER_SERVICE
 from app.auth.token import (
     Token,
     User,
+    UserWithInformations,
     authenticate_user,
     create_access_token,
     get_current_user,
+    get_current_user_with_informations,
 )
 from app.database.unit_of_work import unit_api
 from app.exceptions import (
@@ -59,6 +61,15 @@ def register_user(
 def read_users_me(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
+    return current_user
+
+
+@auth_router.get("/users/me/details/")
+def read_users_me_details(
+    current_user: Annotated[
+        UserWithInformations, Depends(get_current_user_with_informations)
+    ],
+) -> UserWithInformations:
     return current_user
 
 
