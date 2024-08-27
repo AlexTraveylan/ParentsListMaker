@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.api.user_information.models import USER_INFORMATION_SERVICE, UserInformation
 from app.auth.token import UserWithInformations, get_current_user_with_informations
-from app.commun.crypto import encrypt, generate_confirmation_token
+from app.commun.crypto import generate_confirmation_token
 from app.database.unit_of_work import unit_api
 from app.emailmanager.models import (
     EMAIL_CONFIRMATION_TOKEN_SERVICE,
@@ -13,6 +13,7 @@ from app.emailmanager.models import (
 )
 from app.emailmanager.schema import EmailSchema
 from app.emailmanager.send_email import (
+    html_wrapper_for_confirmation_email_with_token,
     html_wrapper_for_introduction_email,
     send_contact_message,
 )
@@ -42,7 +43,7 @@ def add_email_to_user(
         USER_INFORMATION_SERVICE.update(
             session,
             existing_user_information.id,
-            encrypted_email=encrypt(payload.email),
+            encrypted_email=payload.email,
             is_email_confirmed=False,
         )
 
@@ -53,6 +54,15 @@ def add_email_to_user(
 
         confirm_email_created = EMAIL_CONFIRMATION_TOKEN_SERVICE.create(
             session, new_email_confirmation
+        )
+
+        html = html_wrapper_for_confirmation_email_with_token(
+            token=new_email_confirmation.token
+        )
+        send_contact_message(
+            subject="ParentsListMaker - Confirmez votre email",
+            html=html,
+            to=payload.email,
         )
 
         session.expunge(confirm_email_created)
