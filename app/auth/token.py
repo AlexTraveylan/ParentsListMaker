@@ -58,23 +58,23 @@ def create_access_token(data: dict) -> Token:
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
-    with unit_api("Trying to get current user") as session:
+    with unit_api("Tentative de récupération de l'utilisateur du token") as session:
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             username: str | None = payload.get("sub")
 
             if username is None:
-                raise UnauthorizedException("Username not found in token")
+                raise UnauthorizedException("Utilisateur non trouvé dans le token")
 
             token_data = TokenData(username=username)
 
         except InvalidTokenError:
-            raise UnauthorizedException("Invalid token")
+            raise UnauthorizedException("Token invalide")
 
         user = USER_SERVICE.get_or_none(session, username=token_data.username)
 
         if user is None:
-            raise UnauthorizedException("User not found")
+            raise UnauthorizedException("Utilisateur non trouvé")
 
         session.expunge(user)
 
@@ -93,29 +93,29 @@ class UserWithInformations(BaseModel):
 async def get_current_user_with_informations(
     token: Annotated[str, Depends(oauth2_scheme)],
 ) -> UserWithInformations:
-    with unit_api("Trying to get current user") as session:
+    with unit_api("Tentative de récupération de l'utilisateur du token") as session:
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             username: str | None = payload.get("sub")
 
             if username is None:
-                raise UnauthorizedException("Username not found in token")
+                raise UnauthorizedException("Utilisateur non trouvé dans le token")
 
             token_data = TokenData(username=username)
         except InvalidTokenError:
-            raise UnauthorizedException("Invalid token")
+            raise UnauthorizedException("Token invalide")
 
         user = USER_SERVICE.get_or_none(session, username=token_data.username)
 
         if user is None:
-            raise UnauthorizedException("User not found")
+            raise UnauthorizedException("Utilisateur non trouvé")
 
         user_information = USER_INFORMATION_SERVICE.get_or_none(
             session, user_id=user.id
         )
 
         if user_information is None:
-            raise UnauthorizedException("User has no informations")
+            raise UnauthorizedException("Utilisateur n'a pas d'informations")
 
         list_links = LIST_LINK_SERVICE.get_all_list_links_by_user_id(session, user.id)
         school_links = SCHOOL_LINK_SERVICE.get_all_school_links_by_user_id(
