@@ -187,12 +187,8 @@ def reset_password(
         if user_id is None:
             raise UnauthorizedException("Token de réinitialisation invalide ou expiré")
 
-        user_info = USER_INFORMATION_SERVICE.get_or_none(session, user_id=user_id)
-        if user_info is None:
-            raise UnauthorizedException("Utilisateur non trouvé")
-
-        USER_INFORMATION_SERVICE.update(
+        USER_SERVICE.update(
             session,
-            user_info.id,
-            encrypted_password=payload.new_password,
+            user_id,
+            hashed_password=payload.new_password,
         )
