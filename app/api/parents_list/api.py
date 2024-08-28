@@ -246,8 +246,7 @@ def accept_parents_list(
             user_to_accept_list_link.id,
             is_admin=False,
             status=UserOnListStatus.ACCEPTED,
-            # position_in_list=nb_members + 1,
-            position_in_list=2,
+            position_in_list=nb_members + 1,
         )
 
         session.expunge(new_list_link)
