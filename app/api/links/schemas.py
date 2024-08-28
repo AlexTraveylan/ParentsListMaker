@@ -18,6 +18,7 @@ class LinkListSchemaOut(BaseModel):
 
 
 class ParentInformation(BaseModel):
+    user_id: int
     first_name: str
     last_name: str
     position_in_list: int

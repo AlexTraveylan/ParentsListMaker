@@ -45,6 +45,7 @@ def get_confirmed_parents_in_list(
 
             result.append(
                 ParentInformation(
+                    user_id=list_link.user_id,
                     first_name=user_information.first_name,
                     last_name=user_information.name,
                     position_in_list=list_link.position_in_list,
@@ -84,6 +85,7 @@ def get_waiting_parents_in_list(
 
                 result.append(
                     ParentInformation(
+                        user_id=list_link.user_id,
                         first_name=user_information.first_name,
                         last_name=user_information.name,
                         position_in_list=list_link.position_in_list,
