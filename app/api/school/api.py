@@ -1,7 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Path, status
 
 from app.api.links.models import (
     SCHOOL_LINK_SERVICE,
@@ -44,6 +44,20 @@ def get_school_of_user(
             schools.append(school.to_decrypted())
 
     return schools
+
+
+@school_router.get("/{school_id}", status_code=status.HTTP_200_OK)
+def get_school_by_id(
+    school_id: int = Annotated[int, Path(title="school_id")],
+) -> SchoolSchemaOut:
+    with unit_api("Tentative de récupération de l'établissement") as session:
+        school = SCHOOL_SERVICE.get_or_none(session, id=school_id)
+        if school is None:
+            raise RessourceNotFoundException("Établissement non trouvé")
+
+        decrypted_school = school.to_decrypted()
+
+    return decrypted_school
 
 
 @school_router.get("/", status_code=status.HTTP_200_OK)
