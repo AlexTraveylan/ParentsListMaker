@@ -59,7 +59,7 @@ def html_wrapper_for_confirmation_email_with_token(token: str) -> str:
         <a href="{CONFIRMATION_URL}/{token}" class="btn">Confirmer mon email</a>
         <p>Si le bouton ne fonctionne pas, vous pouvez copier et coller le lien suivant dans votre navigateur :</p>
         <p class="copy-link">{CONFIRMATION_URL}/{token}</p>
-        <p>Votre email sera encodé dans notre base de données et ne sera pas accessible aux autres utilisateurs. Notre application servira d'intermédiaire pour communiquer. Si vous souhaitez transmettre votre email dans ces communications, ce sera à vous de le partager directement.</p>
+        <p>Votre email sera encodé dans notre base de données et ne sera pas accessible aux autres parents. Notre application servira d'intermédiaire pour communiquer. Si vous souhaitez transmettre votre email dans ces communications, ce sera à vous de le partager directement.</p>
     </body>
     </html>
     """
@@ -103,9 +103,9 @@ def html_wrapper_for_join_request_notification(
     <body>
         <h1>Nouvelle demande pour rejoindre votre liste</h1>
         <p>Bonjour,</p>
-        <p>Nous vous informons que l'utilisateur <strong>{username}</strong> souhaite rejoindre votre liste <strong>{list_name}</strong>.</p>
+        <p>Nous vous informons que <strong>{username}</strong> souhaite rejoindre votre liste <strong>{list_name}</strong>.</p>
         <p>Pour gérer cette demande, veuillez vous connecter à votre compte et accéder à la section de gestion de votre liste.</p>
-        <p>Cet utilisateur a également ajouté le message suivant :</p>
+        <p>Ce parent a également ajouté le message suivant :</p>
         <p>{message}</p>
     </body>
     </html>
@@ -145,7 +145,7 @@ def html_wrapper_for_introduction_email(sender_email: str, message: str) -> str:
     </head>
     <body>
         <h1>Nouveau message de mise en relation</h1>
-        <p>Un utilisateur souhaite entrer en contact avec vous. Voici les détails :</p>
+        <p>Un parent souhaite entrer en contact avec vous. Voici les détails :</p>
         
         <div class="message-box">
             <p><strong>Email de l'expéditeur :</strong> {sender_email}</p>
