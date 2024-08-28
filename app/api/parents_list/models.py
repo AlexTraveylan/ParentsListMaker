@@ -1,8 +1,8 @@
 from typing import Optional
 
 from pydantic import field_validator
-from sqlalchemy import Column, ForeignKey, Integer
-from sqlmodel import Field
+from sqlalchemy import Column, ForeignKey, Integer, select
+from sqlmodel import Field, Session
 
 from app.commun.validator import validate_string
 from app.database.model_base import BaseSQLModel
@@ -29,6 +29,13 @@ class ParentsList(BaseSQLModel, table=True):
 
 class ParentsListService(Repository[ParentsList]):
     __model__ = ParentsList
+
+    def get_all_by_school_id(
+        self, session: Session, school_id: int
+    ) -> list[ParentsList]:
+        statement = select(ParentsList).where(ParentsList.school_id == school_id)
+
+        return [item[0] for item in session.exec(statement).all()]
 
 
 PARENTS_LIST_SERVICE = ParentsListService()
