@@ -7,14 +7,12 @@ from app.api.school.api import school_router
 from app.api.user_information.api import user_information_router
 from app.auth.api import auth_router
 from app.emailmanager.api import email_router
+from app.settings import FRONTEND_URL
 
 app = FastAPI()
 
 origins = [
-    "http://localhost",
-    "http://localhost:8080",
-    "http://localhost:8000",
-    "http://localhost:3000",
+    f"{FRONTEND_URL}",
 ]
 
 app.add_middleware(
