@@ -4,20 +4,30 @@ from fastapi import APIRouter, Body, Depends, Path, status
 from pydantic import BaseModel, Field
 
 from app.api.user_information.models import USER_INFORMATION_SERVICE, UserInformation
-from app.auth.token import UserWithInformations, get_current_user_with_informations
-from app.commun.crypto import generate_confirmation_token
+from app.auth.models import USER_SERVICE
+from app.auth.token import (
+    UserWithInformations,
+    get_current_user_with_informations,
+)
+from app.commun.crypto import (
+    generate_confirmation_token,
+    generate_password_reset_token,
+    verify_password_reset_token,
+)
 from app.database.unit_of_work import unit_api
 from app.emailmanager.models import (
     EMAIL_CONFIRMATION_TOKEN_SERVICE,
     EmailConfirmationToken,
 )
-from app.emailmanager.schema import EmailSchema
+from app.emailmanager.schema import EmailSchema, PasswordResetSchema, UsernameSchema
 from app.emailmanager.send_email import (
     html_wrapper_for_confirmation_email_with_token,
     html_wrapper_for_introduction_email,
+    html_wrapper_for_password_reset_email,
     send_contact_message,
 )
 from app.exceptions import RessourceNotFoundException, UnauthorizedException
+from app.settings import FRONTEND_URL
 
 email_router = APIRouter(
     tags=["Email"],
@@ -136,4 +146,53 @@ def contact_user(
             subject="ParentsListMaker - Demande de contact",
             html=html,
             to=user_info.email,
+        )
+
+
+@email_router.post("/request-password-reset", status_code=status.HTTP_204_NO_CONTENT)
+def request_password_reset(
+    payload: UsernameSchema,
+) -> None:
+    with unit_api("Demande de réinitialisation du mot de passe") as session:
+        user = USER_SERVICE.get_or_none(session, username=payload.username)
+
+        if user is None:
+            raise UnauthorizedException("Utilisateur non trouvé")
+
+        user_info = USER_INFORMATION_SERVICE.get_or_none(session, user_id=user.id)
+
+        if user_info is None:
+            raise UnauthorizedException("Utilisateur n'a pas d'informations")
+
+        if user_info.email is None or not user_info.is_email_confirmed:
+            raise UnauthorizedException("L'utilisateur n'a pas confirmé son email")
+
+        reset_token = generate_password_reset_token(user_info.id)
+        reset_link = f"{FRONTEND_URL}/auth/reset-password?token={reset_token}"
+
+        html = html_wrapper_for_password_reset_email(reset_link)
+        send_contact_message(
+            subject="ParentsListMaker - Réinitialisation du mot de passe",
+            html=html,
+            to=user_info.email,
+        )
+
+
+@email_router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+def reset_password(
+    payload: PasswordResetSchema,
+) -> None:
+    with unit_api("Réinitialisation du mot de passe") as session:
+        user_id = verify_password_reset_token(payload.token)
+        if user_id is None:
+            raise UnauthorizedException("Token de réinitialisation invalide ou expiré")
+
+        user_info = USER_INFORMATION_SERVICE.get_or_none(session, user_id=user_id)
+        if user_info is None:
+            raise UnauthorizedException("Utilisateur non trouvé")
+
+        USER_INFORMATION_SERVICE.update(
+            session,
+            user_info.id,
+            encrypted_password=payload.new_password,
         )

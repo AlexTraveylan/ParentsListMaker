@@ -8,6 +8,7 @@ load_dotenv()
 # General
 PRODUCTION = True if os.getenv("PRODUCTION") == "True" else False
 BACKEND_HOST = os.getenv("BACKEND_HOST")
+FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 # Database
 DB_URL = os.getenv("DB_URL")

@@ -163,3 +163,57 @@ def html_wrapper_for_introduction_email(sender_email: str, message: str) -> str:
     """
 
     return html
+
+
+def html_wrapper_for_password_reset_email(reset_link: str) -> str:
+    html = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Réinitialisation du mot de passe</title>
+        <style>
+            body {{
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 600px;
+                margin: 0 auto;
+                padding: 20px;
+            }}
+            .btn {{
+                display: inline-block;
+                padding: 10px 20px;
+                background-color: #007bff;
+                color: #ffffff;
+                text-decoration: none;
+                border-radius: 5px;
+                margin-top: 20px;
+            }}
+            .btn:hover {{
+                background-color: #0056b3;
+            }}
+            .copy-link {{
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                padding: 10px;
+                margin-top: 20px;
+                word-break: break-all;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Réinitialisation de votre mot de passe</h1>
+        <p>Vous avez demandé la réinitialisation de votre mot de passe. Veuillez cliquer sur le bouton ci-dessous pour créer un nouveau mot de passe :</p>
+        <a href="{reset_link}" class="btn">Réinitialiser mon mot de passe</a>
+        <p>Si le bouton ne fonctionne pas, vous pouvez copier et coller le lien suivant dans votre navigateur :</p>
+        <p class="copy-link">{reset_link}</p>
+        <p>Ce lien expirera dans 1 heure pour des raisons de sécurité.</p>
+        <p>Si vous n'avez pas demandé cette réinitialisation ou si quelque chose vous semble suspect, veuillez contacter immédiatement notre administrateur à l'adresse : {ADMINSTRATOR_EMAIL}</p>
+    </body>
+    </html>
+    """
+
+    return html
