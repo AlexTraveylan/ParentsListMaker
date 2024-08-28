@@ -34,6 +34,20 @@ parents_list_router = APIRouter(
 )
 
 
+@parents_list_router.get("/{school_id}", status_code=status.HTTP_200_OK)
+def get_parents_lists_by_school_id(
+    school_id: int = Annotated[int, Path(title="school_id")],
+) -> list[ParentsList]:
+    with unit_api(
+        "Tentative de récupération de toutes les listes de l'école spécifiée"
+    ) as session:
+        parents_lists = PARENTS_LIST_SERVICE.get_all_by_school_id(session, school_id)
+
+        session.expunge_all()
+
+    return parents_lists
+
+
 @parents_list_router.get("/", status_code=status.HTTP_200_OK)
 def get_all_parents_lists() -> list[ParentsList]:
     with unit_api(
