@@ -1,11 +1,15 @@
+from typing import Generic, List, Optional, TypeVar
+
 from sqlalchemy.exc import NoResultFound
 from sqlmodel import Session, select
 
 from app.exceptions import DatabaseException, NotFoundException
 
+T = TypeVar("T")
 
-class Repository[T]:
-    __model__: type[T]
+
+class Repository(Generic[T]):
+    __model__: type
 
     @staticmethod
     def create(session: Session, item: T) -> T:
@@ -47,7 +51,7 @@ class Repository[T]:
 
         return first_item
 
-    def get_or_none(self, session: Session, **kwargs) -> T | None:
+    def get_or_none(self, session: Session, **kwargs) -> Optional[T]:
         filter_kwargs = [
             getattr(self.__model__, key) == value for key, value in kwargs.items()
         ]
@@ -57,7 +61,7 @@ class Repository[T]:
 
         return item
 
-    def get_all(self, session: Session) -> list[T]:
+    def get_all(self, session: Session) -> List[T]:
         return session.exec(select(self.__model__)).all()
 
     def delete(self, session: Session, id_: int) -> bool:
