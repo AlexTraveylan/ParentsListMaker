@@ -275,6 +275,9 @@ def make_user_admin(
         if user_to_make_admin is None:
             raise RessourceNotFoundException("L'utilisateur n'existe pas")
 
+        if user_to_make_admin.position_in_list == 0:
+            raise UnauthorizedException("L'utilisateur est en file d'attente")
+
         LIST_LINK_SERVICE.update(
             session,
             user_to_make_admin.id,

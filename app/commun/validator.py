@@ -44,3 +44,15 @@ def validate_string(value: str) -> str:
         raise ValueError("Username is too long. Maximum length is 64 characters.")
 
     return value
+
+
+def validate_code(value: str) -> str:
+    value = value.strip()
+
+    if not (len(value) == 8 and value.isupper() and value.isalnum()):
+        raise ValueError(
+            "Code must be 8 characters long, composed of uppercase letters and numbers."
+        )
+    return value
+
+    return value

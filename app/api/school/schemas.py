@@ -10,6 +10,7 @@ class SchoolSchemaIn(BaseModel):
     country: str
     adress: str
     school_relation: Literal["parent", "direction"]
+    code: str
 
 
 class SchoolSchemaOut(BaseModel):
@@ -19,3 +20,14 @@ class SchoolSchemaOut(BaseModel):
     zip_code: str
     country: str
     adress: str
+
+
+class SchoolSchemaMe(BaseModel):
+    id: int
+    school_name: str
+    city: str
+    zip_code: str
+    country: str
+    adress: str
+    school_relation: Literal["parent", "direction"]
+    code: str

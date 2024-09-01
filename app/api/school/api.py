@@ -9,7 +9,7 @@ from app.api.links.models import (
     SchoolRelation,
 )
 from app.api.school.models import SCHOOL_SERVICE, School
-from app.api.school.schemas import SchoolSchemaIn, SchoolSchemaOut
+from app.api.school.schemas import SchoolSchemaIn, SchoolSchemaMe, SchoolSchemaOut
 from app.auth.models import User
 from app.auth.token import (
     UserWithInformations,
@@ -32,7 +32,7 @@ def get_school_of_user(
     current_user: Annotated[
         UserWithInformations, Depends(get_current_user_with_informations)
     ],
-) -> list[SchoolSchemaOut]:
+) -> list[SchoolSchemaMe]:
     with unit_api(
         "Tentative de récupération de l'établissement de l'utilisateur"
     ) as session:
@@ -41,33 +41,44 @@ def get_school_of_user(
             school = SCHOOL_SERVICE.get_or_none(session, id=school_id)
             if school is None:
                 raise RessourceNotFoundException("Établissement non trouvé")
-            schools.append(school.to_decrypted())
+
+            school_link = SCHOOL_LINK_SERVICE.get_or_none(
+                session, school_id=school_id, user_id=current_user.id
+            )
+
+            if school_link is None:
+                raise RessourceNotFoundException(
+                    "Lien entre établissement et utilisateur non trouvé"
+                )
+
+            school_with_relation = SchoolSchemaMe(
+                id=school.id,
+                school_name=school.school_name,
+                city=school.city,
+                zip_code=school.zip_code,
+                country=school.country,
+                adress=school.adress,
+                school_relation=school_link.school_relation.value,
+                code=school.code,
+            )
+
+            schools.append(school_with_relation)
 
     return schools
 
 
-@school_router.get("/{school_id}", status_code=status.HTTP_200_OK)
-def get_school_by_id(
-    school_id: int = Annotated[int, Path(title="school_id")],
+@school_router.get("/{school_code}", status_code=status.HTTP_200_OK)
+def get_school_by_school_code(
+    school_code: str = Annotated[str, Path(title="school_code")],
 ) -> SchoolSchemaOut:
     with unit_api("Tentative de récupération de l'établissement") as session:
-        school = SCHOOL_SERVICE.get_or_none(session, id=school_id)
+        school = SCHOOL_SERVICE.get_or_none(session, code=school_code)
         if school is None:
             raise RessourceNotFoundException("Établissement non trouvé")
 
         decrypted_school = school.to_decrypted()
 
     return decrypted_school
-
-
-@school_router.get("/", status_code=status.HTTP_200_OK)
-def get_all_schools() -> list[SchoolSchemaOut]:
-    with unit_api("Tentative de récupération de tous les établissements") as session:
-        schools = SCHOOL_SERVICE.get_all(session)
-
-        schools_decrypted = [school.to_decrypted() for school in schools]
-
-    return schools_decrypted
 
 
 @school_router.post("/", status_code=status.HTTP_201_CREATED)
@@ -90,6 +101,7 @@ def create_school(
             country=payload.country,
             adress=payload.adress,
             user_id=current_user.id,
+            code=payload.code,
         )
 
         created_school = SCHOOL_SERVICE.create(session, school)
@@ -114,7 +126,7 @@ def create_school(
 @school_router.get("/join/{school_id}", status_code=status.HTTP_200_OK)
 def join_school(
     current_user: Annotated[User, Depends(get_current_user)],
-    school_id: int,
+    school_code: str,
 ) -> SchoolSchemaOut:
     """
     Join a school
@@ -123,12 +135,12 @@ def join_school(
     He must've a link object
     """
     with unit_api("Tentative de rejoindre un établissement") as session:
-        school = SCHOOL_SERVICE.get_or_none(session, id=school_id)
+        school = SCHOOL_SERVICE.get_or_none(session, code=school_code)
         if school is None:
             raise RessourceNotFoundException("Établissement non trouvé")
 
         user_link = SCHOOL_LINK_SERVICE.get_or_none(
-            session, user_id=current_user.id, school_id=school_id
+            session, user_id=current_user.id, school_id=school.id
         )
         if user_link is not None:
             raise CannotCreateStillExistsException("L'utilisateur est déjà membre")

@@ -5,11 +5,13 @@ from pydantic import BaseModel, Field
 
 from app.api.links.models import (
     LIST_LINK_SERVICE,
+    SCHOOL_LINK_SERVICE,
     ListLink,
+    SchoolRelation,
     UserOnListStatus,
 )
 from app.api.parents_list.models import PARENTS_LIST_SERVICE, ParentsList
-from app.api.parents_list.schema import ParentsListSchema
+from app.api.parents_list.schema import ParentsListSchemaIn, ParentsListSchemaOut
 from app.api.school.models import SCHOOL_SERVICE
 from app.api.user_information.models import USER_INFORMATION_SERVICE
 from app.auth.models import USER_SERVICE, User
@@ -34,26 +36,19 @@ parents_list_router = APIRouter(
 )
 
 
-@parents_list_router.get("/{school_id}", status_code=status.HTTP_200_OK)
-def get_parents_lists_by_school_id(
-    school_id: int = Annotated[int, Path(title="school_id")],
+@parents_list_router.get("/{school_code}", status_code=status.HTTP_200_OK)
+def get_parents_lists_by_school_code(
+    school_code: str = Annotated[str, Path(title="school_code")],
 ) -> list[ParentsList]:
     with unit_api(
         "Tentative de récupération de toutes les listes de l'école spécifiée"
     ) as session:
-        parents_lists = PARENTS_LIST_SERVICE.get_all_by_school_id(session, school_id)
+        school = SCHOOL_SERVICE.get_or_none(session, code=school_code)
+        if school is None:
+            raise RessourceNotFoundException("Établissement non trouvé")
 
-        session.expunge_all()
+        parents_lists = PARENTS_LIST_SERVICE.get_all_by_school_id(session, school.id)
 
-    return parents_lists
-
-
-@parents_list_router.get("/", status_code=status.HTTP_200_OK)
-def get_all_parents_lists() -> list[ParentsList]:
-    with unit_api(
-        "Tentative de récupération de toutes les listes de parents"
-    ) as session:
-        parents_lists = PARENTS_LIST_SERVICE.get_all(session)
         session.expunge_all()
 
     return parents_lists
@@ -64,22 +59,36 @@ def create_parents_list(
     current_user: Annotated[
         UserWithInformations, Depends(get_current_user_with_informations)
     ],
-    payload: ParentsListSchema,
-) -> ParentsListSchema:
+    payload: ParentsListSchemaIn,
+) -> ParentsListSchemaOut:
     with unit_api("Tentative de création d'une liste de parents") as session:
         if current_user.email is None or not current_user.is_email_confirmed:
             raise RessourceNotFoundException(
                 "Tu ne peux pas créer une liste de parents sans email confirmé"
             )
 
-        school = SCHOOL_SERVICE.get_or_none(session, id=payload.school_id)
+        school = SCHOOL_SERVICE.get_or_none(session, code=payload.school_code)
         if school is None:
             raise RessourceNotFoundException("Impossible de trouver l'école")
+
+        school_link = SCHOOL_LINK_SERVICE.get_or_none(
+            session, school_id=school.id, user_id=current_user.id
+        )
+
+        if school_link is None:
+            raise RessourceNotFoundException(
+                "Lien entre établissement et utilisateur non trouvé"
+            )
+
+        if school_link.school_relation == SchoolRelation.DIRECTION:
+            raise UnauthorizedException(
+                "La direction ne peut pas créer de liste de parents"
+            )
 
         new_parent_list = ParentsList(
             list_name=payload.list_name,
             holder_length=payload.holder_length,
-            school_id=payload.school_id,
+            school_id=school.id,
             creator_id=current_user.id,
         )
         new_parent_list = PARENTS_LIST_SERVICE.create(session, new_parent_list)

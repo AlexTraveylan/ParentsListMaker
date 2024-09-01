@@ -1,6 +1,6 @@
 import pytest
 
-from app.commun.validator import validate_email, validate_password
+from app.commun.validator import validate_code, validate_email, validate_password
 
 
 @pytest.mark.parametrize(
@@ -61,3 +61,32 @@ def test_validate_email_with_invalid_emails(invalid_email):
 )
 def test_validate_email_with_valid_emails(valid_email):
     assert validate_email(valid_email) == valid_email
+
+
+@pytest.mark.parametrize(
+    "invalid_code",
+    [
+        "abcdefgh",
+        "1234abcd",
+        "abcd1234",
+        "abcdABCD",
+        "ABCDabcd",
+        "ABcd1234djkhfsmlkf",
+        "AB1",
+        "ABCD123*",
+    ],
+)
+def test_validate_code_with_invalid_codes(invalid_code):
+    with pytest.raises(ValueError):
+        validate_code(invalid_code)
+
+
+@pytest.mark.parametrize(
+    "valid_code",
+    [
+        "ABCD1234",
+        "1234ABCD",
+    ],
+)
+def test_validate_code_with_valid_codes(valid_code):
+    assert validate_code(valid_code) == valid_code

@@ -6,7 +6,7 @@ from sqlmodel import Field
 
 from app.api.school.schemas import SchoolSchemaOut
 from app.commun.crypto import decrypt, encrypt
-from app.commun.validator import validate_string
+from app.commun.validator import validate_code, validate_string
 from app.database.model_base import BaseSQLModel
 from app.database.repository import Repository
 
@@ -20,6 +20,7 @@ class School(BaseSQLModel, table=True):
     encrypted_zip_code: str = Field(alias="zip_code")
     encrypted_country: str = Field(alias="country")
     encrypted_adress: str = Field(alias="adress")
+    code: str = Field(unique=True)
 
     @cached_property
     def school_name(self) -> str:
@@ -70,6 +71,10 @@ class School(BaseSQLModel, table=True):
         value = validate_string(value)
 
         return encrypt(value)
+
+    @field_validator("code")
+    def code_format(cls, value: str) -> str:
+        return validate_code(value)
 
     def to_decrypted(self) -> SchoolSchemaOut:
         return SchoolSchemaOut(
