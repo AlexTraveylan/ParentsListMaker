@@ -6,7 +6,12 @@ from app.api.links.models import LIST_LINK_SERVICE, UserOnListStatus
 from app.api.links.schemas import ParentInformation
 from app.api.parents_list.models import PARENTS_LIST_SERVICE
 from app.api.user_information.models import USER_INFORMATION_SERVICE
-from app.auth.token import UserWithInformations, get_current_user_with_informations
+from app.auth.models import USER_SERVICE, User
+from app.auth.token import (
+    UserWithInformations,
+    get_current_user,
+    get_current_user_with_informations,
+)
 from app.database.unit_of_work import unit_api
 from app.exceptions import RessourceNotFoundException, UnauthorizedException
 
@@ -283,3 +288,54 @@ def make_user_admin(
             user_to_make_admin.id,
             is_admin=True,
         )
+
+
+@links_api.patch(
+    "/transfer/{list_id}/{user_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def transfer_list_propriety(
+    admin_user: Annotated[User, Depends(get_current_user)],
+    list_id: int = Annotated[int, Path(title="list_id")],
+    user_id: int = Annotated[int, Path(title="user_id")],
+) -> None:
+    with unit_api("Tentative de transfert de propriété d'une liste") as session:
+        actual_list = PARENTS_LIST_SERVICE.get_or_none(session, id=list_id)
+        if actual_list is None:
+            raise RessourceNotFoundException("La liste n'existe pas")
+
+        if actual_list.creator_id != admin_user.id:
+            raise UnauthorizedException(
+                "Tu ne peux pas transférer la propriété d'une liste pour laquelle tu n'as pas la propriété"
+            )
+
+        user_to_transfer = USER_SERVICE.get_or_none(session, id=user_id)
+        if user_to_transfer is None:
+            raise RessourceNotFoundException("L'utilisateur n'existe pas")
+
+        user_info = USER_INFORMATION_SERVICE.get_or_none(session, user_id=user_id)
+        if user_info is None:
+            raise RessourceNotFoundException("L'utilisateur n'a pas d'informations")
+
+        if user_info.email is None or not user_info.is_email_confirmed:
+            raise UnauthorizedException(
+                "L'utilisateur cible n'a pas confirmé son email"
+            )
+
+        PARENTS_LIST_SERVICE.update(
+            session,
+            actual_list.id,
+            creator_id=user_to_transfer.id,
+        )
+
+        user_to_transfer_list_link = LIST_LINK_SERVICE.get_or_none(
+            session,
+            user_id=user_to_transfer.id,
+            list_id=actual_list.id,
+        )
+
+        if user_to_transfer_list_link is None:
+            raise RessourceNotFoundException(
+                "L'utilisateur cible n'a pas rejoint cette liste"
+            )
+
+        LIST_LINK_SERVICE.update(session, user_to_transfer_list_link.id, is_admin=True)
