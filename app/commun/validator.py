@@ -54,5 +54,3 @@ def validate_code(value: str) -> str:
             "Code must be 8 characters long, composed of uppercase letters and numbers."
         )
     return value
-
-    return value
