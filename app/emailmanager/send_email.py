@@ -98,6 +98,14 @@ def html_wrapper_for_join_request_notification(
             .btn:hover {{
                 background-color: #0056b3;
             }}
+            .message-box {{
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 5px;
+                padding: 10px;
+                margin-top: 20px;
+                word-break: break-all;
+            }}
         </style>
     </head>
     <body>
@@ -106,7 +114,9 @@ def html_wrapper_for_join_request_notification(
         <p>Nous vous informons que <strong>{username}</strong> souhaite rejoindre votre liste <strong>{list_name}</strong>.</p>
         <p>Pour gérer cette demande, veuillez vous connecter à votre compte et accéder à la section de gestion de votre liste.</p>
         <p>Ce parent a également ajouté le message suivant :</p>
-        <p>{message}</p>
+        <div class="message-box">
+            <p>{message}</p>
+        </div>
     </body>
     </html>
     """
