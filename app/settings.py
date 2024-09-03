@@ -22,5 +22,5 @@ AES_KEY = base64.b64decode(os.getenv("AES_KEY"))
 # Email
 DOMAIN_EMAIL = os.getenv("DOMAIN_EMAIL")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
-CONFIRMATION_URL = f"{BACKEND_HOST}/confirmation-email"
+CONFIRMATION_URL = f"{FRONTEND_URL}/my-account/valid-email"
 ADMINSTRATOR_EMAIL = os.getenv("ADMINSTRATOR_EMAIL")
