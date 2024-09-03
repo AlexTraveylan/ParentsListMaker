@@ -123,10 +123,10 @@ def create_school(
     return created_school.to_decrypted()
 
 
-@school_router.get("/join/{school_id}", status_code=status.HTTP_200_OK)
+@school_router.get("/join/{school_code}", status_code=status.HTTP_200_OK)
 def join_school(
     current_user: Annotated[User, Depends(get_current_user)],
-    school_code: str,
+    school_code: Annotated[str, Path(title="school_code")],
 ) -> SchoolSchemaOut:
     """
     Join a school
