@@ -7,4 +7,4 @@ bcrypt
 cryptography
 resend
 uvicorn
-hypercorn
+psycopg2
